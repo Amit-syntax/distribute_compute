@@ -10,11 +10,9 @@ accepting the code to run from the client and distribute it across clients that 
 <img width="12809" height="8908" alt="distribute_computing-2" src="https://github.com/user-attachments/assets/536000e9-2673-469f-9471-f7975cf14fd2" />
 
 
-
 # TODO's 
 
-- [ ] creating server and client folders seperate for backend and frontend in same repo.
-- [ ] doing a server setup with nodejs and express
-- [ ] creating a client setup with reactjs(or any other frontend framework that is comfortable to us)
+- [ ] creating websocket server for communication between clients and server.
+- [ ] create a client setup with python.
 
 - [ ] creating a database schema for backend.
