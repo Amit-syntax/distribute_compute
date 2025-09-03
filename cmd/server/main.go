@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Amit-syntax/distribute_compute/internal/client"
 	"github.com/gorilla/websocket"
 )
 
@@ -24,16 +23,16 @@ type Hub struct {
 	mu *sync.RWMutex
 }
 
-
 func NewHub() *Hub {
 	return &Hub{
-		clients: make(map[*Client]bool, ),
+		clients: make(map[*Client]bool),
 	}
 }
 
-
 func (h *Hub) Register(client *Client) {
-	
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.clients[client] = true
 }
 
 var hub = Hub{}
@@ -44,6 +43,10 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		return true
 	},
+}
+
+func (client *Client) readBulk() {
+	
 }
 
 func handleWebsocketConn(w http.ResponseWriter, r *http.Request) {
@@ -71,9 +74,6 @@ func handleWebsocketConn(w http.ResponseWriter, r *http.Request) {
 		conn.Close()
 		return
 	}
-
-
-
 }
 
 
@@ -81,7 +81,6 @@ func main() {
 
 	// TODO:
 	// run a websocket server
-	http.HandleFunc("/ws", handleWebsocketConn)
 
 
 }
