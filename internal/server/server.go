@@ -10,12 +10,27 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type ClientRegistrationMsg struct {
-  Name string `json:"name"` 
+type Message struct {
+	ClientUsername string `json:"client_username"`
+
+	// choices{system_info_update, code_run}
+	MessageType string `json:"message_type"` 
+
+	Content map[string]any `json:"content"`
+}
+
+type RegisterMessage struct {
+	Username string `json:"username"`
+	Ip string `json:"ip"`
+	JoineeType string `json:"joinee_type"` // choices{worker, actor}
 }
 
 type Client struct {
-	Name string `json:"name"`
+	IP string `json:"ip"`
+	Username string `json:"username"`
+	JoineeType string `json:"joinee_type"`
+	conn *websocket.Conn
+	hub *Hub
 }
 
 type Hub struct {
@@ -23,19 +38,21 @@ type Hub struct {
 	mu *sync.RWMutex
 }
 
-func NewHub() *Hub {
-	return &Hub{
-		clients: make(map[*Client]bool),
-	}
-}
-
 func (h *Hub) Register(client *Client) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
+	client.hub = h
 	h.clients[client] = true
 }
 
-var hub = Hub{}
+func (h *Hub) Unregister(client *Client) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	client.hub = h
+	h.clients[client] = false
+}
+
+var hub = &Hub{}
 
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
@@ -46,53 +63,64 @@ var upgrader = websocket.Upgrader{
 }
 
 func (client *Client) readBulk() {
+
+	defer func ()  {
+		client.hub.Unregister(client)
+		client.conn.Close()
+	}()
+
+	for {
+		_, msgByte, err := client.conn.ReadMessage()
+		if err != nil {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure){
+				log.Printf("error: %v", err)
+			}
+			break
+		}
+
+		msg := &Message{}
+		if err = json.Unmarshal(msgByte, msg); err != nil {
+			log.Printf("error unmarshaling: %v", err)
+			continue
+		}
+	}
 	
 }
 
-func handleWebsocketConn(w http.ResponseWriter, r *http.Request) {
-
+func HandleWebsocketConn(w http.ResponseWriter, r *http.Request) {
+	
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
+	defer func() {
+		conn.Close()
+	}()
+
 	// Wait for registration message
 	conn.SetReadLimit(512)
 	conn.SetReadDeadline(time.Now().Add(30 * time.Second))
 
-	_, messageBytes, err := conn.ReadMessage()
+	_, msgByte, err := conn.ReadMessage()
 	if err != nil {
-		log.Printf("Failed to read registration message: %v", err)
-		conn.Close()
-		return
+		if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure){
+			log.Printf("error: %v", err)
+		}
 	}
 
-	var regMsg ClientRegistrationMsg
-	if err := json.Unmarshal(messageBytes, &regMsg); err != nil {
-		log.Printf("Failed to unmarshal registration message: %v", err)
-		conn.Close()
-		return
+	msg := &RegisterMessage{}
+	if err = json.Unmarshal(msgByte, msg); err != nil {
+		log.Printf("error unmarshaling: %v", err)
 	}
+
+	client := &Client{
+		Username: msg.Username,
+		JoineeType: msg.JoineeType,
+		IP: msg.Ip,
+	}
+
+	hub.Register(client)
+
 }
-
-
-func NewServer() {
-	// TODO:
-	// run a websocket server
-	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-		handleWebsocketConn(w, r)
-	})
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		log.Print(w, "WebSocket Server is running!\nConnect to ws://localhost:8080/ws\nCheck status at http://localhost:8080/status")
-	})
-
-	log.Println("WebSocket server starting on :8080")
-	log.Println("WebSocket endpoint: ws://localhost:8080/ws")
-	log.Println("Status endpoint: http://localhost:8080/status")
-	
-	if err := http.ListenAndServe(":8080", nil); err != nil {
-		log.Fatal("ListenAndServe: ", err)
-	}
-}
-
