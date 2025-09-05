@@ -12,9 +12,10 @@ func main() {
 
 	// run a websocket server
 
-	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-		server.HandleWebsocketConn(w, r)
+	http.HandleFunc("/register", func(w http.ResponseWriter, r *http.Request) {
+		server.HandleClientConn(w, r)
 	})
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		log.Print(w, "WebSocket Server is running!\nConnect to ws://localhost:8080/ws\nCheck status at http://localhost:8080/status")
 	})

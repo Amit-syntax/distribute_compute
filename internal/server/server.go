@@ -22,7 +22,7 @@ type Message struct {
 type RegisterMessage struct {
 	Username string `json:"username"`
 	Ip string `json:"ip"`
-	JoineeType string `json:"joinee_type"` // choices{worker, actor}
+	JoineeType string `json:"joinee_type"` // choices{worker,consumer}
 }
 
 type Client struct {
@@ -87,7 +87,7 @@ func (client *Client) readBulk() {
 	
 }
 
-func HandleWebsocketConn(w http.ResponseWriter, r *http.Request) {
+func HandleClientConn(w http.ResponseWriter, r *http.Request) {
 	
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
