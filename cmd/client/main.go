@@ -3,6 +3,8 @@ package main
 import (
 	"github.com/spf13/cobra"
 	"fmt"
+
+	"github.com/Amit-syntax/distribute_compute/internal/client"
 )
 
 var rootCmd = &cobra.Command{
@@ -13,14 +15,14 @@ var rootCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(connectCmd)
 
-	connectCmd.Flags().StringP("server-ip", "ip", "", "distribute compute server IP")
-	// Mark server-ip flag as required
-	if err := connectCmd.MarkFlagRequired("server-ip"); err != nil {
-		fmt.Println("Error marking server-ip as required:", err)
+	connectCmd.Flags().StringP("host", "", "", "distribute compute server host")
+	// Mark host flag as required
+	if err := connectCmd.MarkFlagRequired("host"); err != nil {
+		fmt.Println("Error marking host as required:", err)
 	}
 
-	connectCmd.Flags().StringP("port", "p", "", "port of distribute_compute server")
-	// Mark server-ip flag as required
+	connectCmd.Flags().StringP("port", "p", "", "port of distribute_compute host")
+	// Mark port flag as required
 	if err := connectCmd.MarkFlagRequired("port"); err != nil {
 		fmt.Println("Error marking port as required:", err)
 	}
@@ -31,9 +33,10 @@ var connectCmd = &cobra.Command{
 	Use:   "connect",
 	Short: "connect to a 'distribute compute' server",
 	Run: func(cmd *cobra.Command, args []string) {
+		host, _ := cmd.Flags().GetString("host")
+		port, _ := cmd.Flags().GetString("port")
 
-		name, _ := cmd.Flags().GetString("name")
-		fmt.Printf("Hello, %s!\n", name)
+		client.Connect(host, port)
 
 	},
 }

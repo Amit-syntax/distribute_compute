@@ -11,6 +11,7 @@ import (
 )
 
 type Message struct {
+	Action string `json:"action"` // should be "register"
 	ClientUsername string `json:"client_username"`
 
 	// choices{system_info_update, code_run}
@@ -20,7 +21,8 @@ type Message struct {
 }
 
 type RegisterMessage struct {
-	Username string `json:"username"`
+	Action string `json:"action"` // should be "register"
+	ClientUsername string `json:"client_username"`
 	Ip string `json:"ip"`
 	JoineeType string `json:"joinee_type"` // choices{worker,consumer}
 }
@@ -116,7 +118,7 @@ func HandleClientConn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	client := &Client{
-		Username: msg.Username,
+		Username: msg.ClientUsername,
 		JoineeType: msg.JoineeType,
 		IP: msg.Ip,
 	}
