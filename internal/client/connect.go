@@ -1,17 +1,19 @@
 package client
 
 import (
+	"time"
 	"bufio"
 	"encoding/json"
 	"fmt"
 	"log"
 	"os"
+	"sync"
 
 	"github.com/gorilla/websocket"
 )
 
 func Connect(serverIP string, port string) {
-	url := fmt.Sprintf("ws://%s:%s", serverIP, port)
+	url := fmt.Sprintf("ws://%s:%s/register", serverIP, port)
 
 	// connect to websocket server.
 	dialer := websocket.DefaultDialer
@@ -19,6 +21,7 @@ func Connect(serverIP string, port string) {
 
 	if err != nil {
 		log.Printf("Failed to connect to server: %v", err)
+		return  
 	}
 	defer conn.Close()
 	log.Printf("Connected to server: %s", url)
@@ -32,6 +35,28 @@ func Connect(serverIP string, port string) {
 	// ask for name
 	go recvMsg(conn)
 
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+
+	// holding cli to read user commands
+	go readUserCommands(wg)
+
+	wg.Wait()
+}
+
+
+func readUserCommands(wg *sync.WaitGroup) {
+	for {
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print("cmd: ")
+		command, _ := reader.ReadString('\n')
+		log.Printf("executing command: %v", command)
+
+		if command == "exit\n" {
+			wg.Done()
+			return 
+		}
+	}
 }
 
 
@@ -63,12 +88,31 @@ func sendRegisterMsg(conn *websocket.Conn) error {
 
 func recvMsg(conn *websocket.Conn) {
 
-	defer conn.Close()
+	defer func () {
+		conn.Close()
+	}()
+
+	// Set a read deadline to prevent indefinite blocking
+	conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+
+	// Set a pong handler to handle server-sent pings
+	conn.SetPongHandler(func(appData string) error {
+		log.Println("Received pong from server")
+		// Reset read deadline on receiving pong
+		conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+		return nil
+	})
+
 
 	for {
 		_, message, err := conn.ReadMessage()
 		if err != nil {
+
 			log.Printf("Error reading message: %v", err)
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure){
+				log.Printf("error: %v", err)
+			}
+
 			return
 		}
 

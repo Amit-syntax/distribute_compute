@@ -54,7 +54,10 @@ func (h *Hub) Unregister(client *Client) {
 	h.clients[client] = false
 }
 
-var hub = &Hub{}
+var hub = &Hub{
+	clients: make(map[*Client]bool),
+	mu: &sync.RWMutex{},
+}
 
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
@@ -97,10 +100,6 @@ func HandleClientConn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	defer func() {
-		conn.Close()
-	}()
-
 	// Wait for registration message
 	conn.SetReadLimit(512)
 	conn.SetReadDeadline(time.Now().Add(30 * time.Second))
@@ -124,5 +123,7 @@ func HandleClientConn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	hub.Register(client)
+
+	log.Printf("clients: %d", len(hub.clients))
 
 }
