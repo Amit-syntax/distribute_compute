@@ -1,13 +1,14 @@
 package client
 
 import (
-	"time"
 	"bufio"
 	"encoding/json"
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"sync"
+	"regexp"
 
 	"github.com/gorilla/websocket"
 )
@@ -60,13 +61,43 @@ func readUserCommands(wg *sync.WaitGroup) {
 }
 
 
-func sendRegisterMsg(conn *websocket.Conn) error {
+func isValidUsername(username string) bool {
+    re := regexp.MustCompile(`^[a-zA-Z0-9_]{3,20}$`)
+    if !re.MatchString(username) {
+        return false
+    }
+    if containsSpace := regexp.MustCompile(`\s`).MatchString(username); containsSpace {
+        return false
+    }
+    return true
+}
 
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Print("Enter role (worker/consumer): ")
-	registerRole, _ := reader.ReadString('\n')
-	fmt.Print("Enter name: ")
-	clientUsername, _ := reader.ReadString('\n')
+func sendRegisterMsg(conn *websocket.Conn) error {
+	registerRole := ""
+	clientUsername := ""
+
+	// validations for role and username
+	for {
+
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print("Enter role (worker/consumer): ")
+		registerRole, _ = reader.ReadString('\n')
+		fmt.Print("Enter name: ")
+		clientUsername, _ = reader.ReadString('\n')
+
+		if strings.Trim(registerRole, "\n") == "worker" || strings.Trim(registerRole, "\n") == "consumer" {
+			registerRole = strings.Trim(registerRole, "\n")
+			clientUsername = strings.Trim(clientUsername, "\n")
+			break
+		} else {
+			fmt.Println("Invalid role. Please enter 'worker' or 'consumer'.")
+		}
+
+		if !isValidUsername(clientUsername) {
+			fmt.Println("Invalid username. Please use 3-20 characters: letters, numbers, and underscores only.")
+			continue
+		}
+	}
 
 	registerMsg := map[string]any{
 		"action": registerRole,
@@ -91,18 +122,6 @@ func recvMsg(conn *websocket.Conn) {
 	defer func () {
 		conn.Close()
 	}()
-
-	// Set a read deadline to prevent indefinite blocking
-	conn.SetReadDeadline(time.Now().Add(60 * time.Second))
-
-	// Set a pong handler to handle server-sent pings
-	conn.SetPongHandler(func(appData string) error {
-		log.Println("Received pong from server")
-		// Reset read deadline on receiving pong
-		conn.SetReadDeadline(time.Now().Add(60 * time.Second))
-		return nil
-	})
-
 
 	for {
 		_, message, err := conn.ReadMessage()
