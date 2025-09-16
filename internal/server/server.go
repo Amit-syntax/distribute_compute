@@ -88,6 +88,7 @@ func (client *Client) readBulk() {
 			log.Printf("error unmarshaling: %v", err)
 			continue
 		}
+		// TODO: Process message
 	}
 	
 }

@@ -154,8 +154,10 @@ func executeCmd(cmd []byte) error {
 
 	log.Printf("Executing command: %s", cmd)
 
+	// TODO: Implement command execution logic
+	// Command: execute_code -> make function to run docker and execute code
+
 	return nil
 
 }
-
 
