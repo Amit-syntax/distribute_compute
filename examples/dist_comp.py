@@ -8,7 +8,6 @@ port = ""
 
 def connect(ws_host: str, pip_modules: list):
     """
-
     """
 
     pass
@@ -16,6 +15,4 @@ def connect(ws_host: str, pip_modules: list):
 
 def remote(func: Callable):
     pass
-
-
 

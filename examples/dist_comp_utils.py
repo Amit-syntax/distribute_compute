@@ -22,12 +22,3 @@ def remote(func):
 def some():
     print('this is a remote function')
 
-
-some()
-# remote(some)
-# print(getattr(some, "__name__"))
-# print(getattr(some, "__module__"))
-# print(getattr(some, "__qualname__"))
-# print(getattr(some, "__doc__"))
-# print(getattr(some, "__annotations__"))
-

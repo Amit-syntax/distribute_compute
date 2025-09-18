@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 	"strings"
 	"sync"
-	"regexp"
 
 	"github.com/gorilla/websocket"
 )
@@ -22,7 +22,7 @@ func Connect(serverIP string, port string) {
 
 	if err != nil {
 		log.Printf("Failed to connect to server: %v", err)
-		return  
+		return
 	}
 	defer conn.Close()
 	log.Printf("Connected to server: %s", url)
@@ -45,7 +45,6 @@ func Connect(serverIP string, port string) {
 	wg.Wait()
 }
 
-
 func readUserCommands(wg *sync.WaitGroup) {
 	for {
 		reader := bufio.NewReader(os.Stdin)
@@ -55,21 +54,20 @@ func readUserCommands(wg *sync.WaitGroup) {
 
 		if command == "exit\n" {
 			wg.Done()
-			return 
+			return
 		}
 	}
 }
 
-
 func isValidUsername(username string) bool {
-    re := regexp.MustCompile(`^[a-zA-Z0-9_]{3,20}$`)
-    if !re.MatchString(username) {
-        return false
-    }
-    if containsSpace := regexp.MustCompile(`\s`).MatchString(username); containsSpace {
-        return false
-    }
-    return true
+	re := regexp.MustCompile(`^[a-zA-Z0-9_]{3,20}$`)
+	if !re.MatchString(username) {
+		return false
+	}
+	if containsSpace := regexp.MustCompile(`\s`).MatchString(username); containsSpace {
+		return false
+	}
+	return true
 }
 
 func sendRegisterMsg(conn *websocket.Conn) error {
@@ -100,10 +98,10 @@ func sendRegisterMsg(conn *websocket.Conn) error {
 	}
 
 	registerMsg := map[string]any{
-		"action": registerRole,
-		"client_username":  clientUsername,
-		"ip":               "", //TODO: get this
-		"joinee_role":      registerRole,
+		"action":          registerRole,
+		"client_username": clientUsername,
+		"ip":              "", //TODO: get this
+		"joinee_role":     registerRole,
 	}
 
 	regMsgByte, err := json.Marshal(registerMsg)
@@ -116,10 +114,9 @@ func sendRegisterMsg(conn *websocket.Conn) error {
 	return nil
 }
 
-
 func recvMsg(conn *websocket.Conn) {
 
-	defer func () {
+	defer func() {
 		conn.Close()
 	}()
 
@@ -128,7 +125,7 @@ func recvMsg(conn *websocket.Conn) {
 		if err != nil {
 
 			log.Printf("Error reading message: %v", err)
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure){
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				log.Printf("error: %v", err)
 			}
 
@@ -160,4 +157,3 @@ func executeCmd(cmd []byte) error {
 	return nil
 
 }
-
