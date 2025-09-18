@@ -10,9 +10,10 @@ def connect(ws_host: str, pip_modules: list):
     """
     """
 
-    pass
+    host = ws_host
+
 
 
 def remote(func: Callable):
+    
     pass
-
