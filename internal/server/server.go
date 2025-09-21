@@ -11,33 +11,33 @@ import (
 )
 
 type Message struct {
-	Action string `json:"action"` // should be "register"
+	Action         string `json:"action"` // should be "register"
 	ClientUsername string `json:"client_username"`
 
 	// choices{system_info_update, code_run}
-	MessageType string `json:"message_type"` 
+	MessageType string `json:"message_type"`
 
 	Content map[string]any `json:"content"`
 }
 
 type RegisterMessage struct {
-	Action string `json:"action"` // should be "register"
+	Action         string `json:"action"` // should be "register"
 	ClientUsername string `json:"client_username"`
-	Ip string `json:"ip"`
-	JoineeType string `json:"joinee_type"` // choices{worker,consumer}
+	Ip             string `json:"ip"`
+	JoineeType     string `json:"joinee_type"` // choices{worker,consumer}
 }
 
 type Client struct {
-	IP string `json:"ip"`
-	Username string `json:"username"`
+	IP         string `json:"ip"`
+	Username   string `json:"username"`
 	JoineeType string `json:"joinee_type"`
-	conn *websocket.Conn
-	hub *Hub
+	conn       *websocket.Conn
+	hub        *Hub
 }
 
 type Hub struct {
 	clients map[*Client]bool
-	mu *sync.RWMutex
+	mu      *sync.RWMutex
 }
 
 func (h *Hub) Register(client *Client) {
@@ -56,7 +56,7 @@ func (h *Hub) Unregister(client *Client) {
 
 var hub = &Hub{
 	clients: make(map[*Client]bool),
-	mu: &sync.RWMutex{},
+	mu:      &sync.RWMutex{},
 }
 
 var upgrader = websocket.Upgrader{
@@ -69,7 +69,7 @@ var upgrader = websocket.Upgrader{
 
 func (client *Client) readBulk() {
 
-	defer func ()  {
+	defer func() {
 		client.hub.Unregister(client)
 		client.conn.Close()
 	}()
@@ -77,7 +77,7 @@ func (client *Client) readBulk() {
 	for {
 		_, msgByte, err := client.conn.ReadMessage()
 		if err != nil {
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure){
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				log.Printf("error: %v", err)
 			}
 			break
@@ -89,12 +89,13 @@ func (client *Client) readBulk() {
 			continue
 		}
 		// TODO: Process message
+		log.Printf("message: %v", msg)
 	}
-	
+
 }
 
 func HandleClientConn(w http.ResponseWriter, r *http.Request) {
-	
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
@@ -107,7 +108,7 @@ func HandleClientConn(w http.ResponseWriter, r *http.Request) {
 
 	_, msgByte, err := conn.ReadMessage()
 	if err != nil {
-		if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure){
+		if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 			log.Printf("error: %v", err)
 		}
 	}
@@ -118,9 +119,9 @@ func HandleClientConn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	client := &Client{
-		Username: msg.ClientUsername,
+		Username:   msg.ClientUsername,
 		JoineeType: msg.JoineeType,
-		IP: msg.Ip,
+		IP:         msg.Ip,
 	}
 
 	hub.Register(client)

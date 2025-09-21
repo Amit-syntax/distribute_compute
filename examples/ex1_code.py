@@ -7,7 +7,7 @@ from typing import Callable
 import inspect as ins
 import ast
 from astunparse import unparse
-import ray
+
 
 def get_clean_source(func):
     source = ins.getsource(func)
@@ -49,6 +49,8 @@ def get_results(rem_exec_objs: list[RemExecObj]):
 
     results = []
 
+    # TODO: here send functions to server and ask for execution
+    # - catch exceptions from server if can't execute
     for rec in rem_exec_objs:
         results.append(exec(rec.func_source))
     
