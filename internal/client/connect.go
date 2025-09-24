@@ -100,12 +100,11 @@ func sendRegisterMsg(conn *websocket.Conn) error {
 	registerMsg := map[string]any{
 		"action":          registerRole,
 		"client_username": clientUsername,
-		"ip":              "", //TODO: get this
-		"joinee_role":     registerRole,
+		"joinee_type":     registerRole,
 	}
 
-	regMsgByte, err := json.Marshal(registerMsg)
-	err = conn.WriteMessage(websocket.TextMessage, regMsgByte)
+	regMsgByte, _ := json.Marshal(registerMsg)
+	err := conn.WriteMessage(websocket.TextMessage, regMsgByte)
 	if err != nil {
 		return err
 	}

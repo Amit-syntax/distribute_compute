@@ -23,7 +23,6 @@ type Message struct {
 type RegisterMessage struct {
 	Action         string `json:"action"` // should be "register"
 	ClientUsername string `json:"client_username"`
-	Ip             string `json:"ip"`
 	JoineeType     string `json:"joinee_type"` // choices{worker,consumer}
 }
 
@@ -94,7 +93,7 @@ func (client *Client) readBulk() {
 
 }
 
-func HandleClientConn(w http.ResponseWriter, r *http.Request) {
+func HandleClientConnHandler(w http.ResponseWriter, r *http.Request) {
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -102,7 +101,7 @@ func HandleClientConn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Wait for registration message
+	// Wait for client registration message
 	conn.SetReadLimit(512)
 	conn.SetReadDeadline(time.Now().Add(30 * time.Second))
 
@@ -121,11 +120,16 @@ func HandleClientConn(w http.ResponseWriter, r *http.Request) {
 	client := &Client{
 		Username:   msg.ClientUsername,
 		JoineeType: msg.JoineeType,
-		IP:         msg.Ip,
 	}
 
 	hub.Register(client)
 
 	log.Printf("clients: %d", len(hub.clients))
+
+}
+
+func RunJobHandler(w http.ResponseWriter, r *http.Request) {
+
+	// TODO: recieve job connection request (only for already connected consumers)
 
 }

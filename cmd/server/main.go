@@ -20,12 +20,14 @@ func main() {
 	}
 
 	http.HandleFunc("/register", func(w http.ResponseWriter, r *http.Request) {
-		server.HandleClientConn(w, r)
+		server.HandleClientConnHandler(w, r)
+	})
+
+	http.HandleFunc("/job-execute", func(w http.ResponseWriter, r *http.Request) {
+		server.HandleClientConnHandler(w, r)
 	})
 
 	log.Println("WebSocket server starting on :9090")
-	log.Println("WebSocket endpoint: ws://localhost:9090/ws")
-	log.Println("Status endpoint: http://localhost:9090/status")
 
 	sysSigCh := make(chan os.Signal, 1)
 	signal.Notify(sysSigCh, os.Interrupt)
