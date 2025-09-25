@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
@@ -27,33 +28,46 @@ type RegisterMessage struct {
 }
 
 type Client struct {
-	IP         string `json:"ip"`
+	Id         string `json:"id"`
 	Username   string `json:"username"`
 	JoineeType string `json:"joinee_type"`
 	conn       *websocket.Conn
-	hub        *Hub
+	hub        *ClientHub
 }
 
-type Hub struct {
+type ClientHub struct {
 	clients map[*Client]bool
 	mu      *sync.RWMutex
 }
 
-func (h *Hub) Register(client *Client) {
+func (h *ClientHub) Register(client *Client) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	client.hub = h
 	h.clients[client] = true
 }
 
-func (h *Hub) Unregister(client *Client) {
+func (h *ClientHub) Unregister(client *Client) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	client.hub = h
 	h.clients[client] = false
 }
 
-var hub = &Hub{
+func (h *ClientHub) GetClientById(uuid string) *Client {
+
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	for client := range h.clients {
+		if client.Id == uuid && h.clients[client] {
+			return client
+		}
+	}
+	return nil
+}
+
+var hub = &ClientHub{
 	clients: make(map[*Client]bool),
 	mu:      &sync.RWMutex{},
 }
@@ -118,18 +132,15 @@ func HandleClientConnHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	client := &Client{
+		Id:         uuid.New().String(),
 		Username:   msg.ClientUsername,
 		JoineeType: msg.JoineeType,
+		conn:       conn,
 	}
 
 	hub.Register(client)
+	go client.readBulk()
 
 	log.Printf("clients: %d", len(hub.clients))
-
-}
-
-func RunJobHandler(w http.ResponseWriter, r *http.Request) {
-
-	// TODO: recieve job connection request (only for already connected consumers)
 
 }

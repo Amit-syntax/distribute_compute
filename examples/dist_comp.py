@@ -17,7 +17,7 @@ _ws_conn = None
 
 def connect(
     ws_host: str, ws_port: str, 
-    client_name: str, pip_modules: list,
+    client_id: str, pip_modules: list,
 ):
 
     global host, port, _ws_conn
@@ -25,13 +25,11 @@ def connect(
     host = ws_host
     port = ws_port
 
-    _ws_conn = websocket.create_connection(f"ws://{host}:{port}/")
+    _ws_conn = websocket.create_connection(f"ws://{host}:{port}/session")
     _ws_conn.send(json.dumps({
-        "type": "register", "pip_modules": pip_modules,
-        "client_name": client_name,
+        "pip_modules": pip_modules, "client_id": client_id,
     }))
     response = _ws_conn.recv()
-
 
 
 def get_clean_source(func):

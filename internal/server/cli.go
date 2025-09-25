@@ -42,7 +42,7 @@ func listClients() {
 	}
 
 	for client := range hub.clients {
-		fmt.Printf("Client: %s, IP: %s, Type: %s\n", client.Username, client.IP, client.JoineeType)
+		fmt.Printf("Client: %s, Type: %s\n", client.Username, client.JoineeType)
 	}
 
 }

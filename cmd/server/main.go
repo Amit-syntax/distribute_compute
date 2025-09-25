@@ -23,8 +23,8 @@ func main() {
 		server.HandleClientConnHandler(w, r)
 	})
 
-	http.HandleFunc("/job-execute", func(w http.ResponseWriter, r *http.Request) {
-		server.HandleClientConnHandler(w, r)
+	http.HandleFunc("/session", func(w http.ResponseWriter, r *http.Request) {
+		server.SessionHandler(w, r)
 	})
 
 	log.Println("WebSocket server starting on :9090")
