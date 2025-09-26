@@ -14,13 +14,14 @@ import json
 host = ""
 port = ""
 _ws_conn = None
+_session_id = None
 
 def connect(
     ws_host: str, ws_port: str, 
     client_id: str, pip_modules: list,
 ):
 
-    global host, port, _ws_conn
+    global host, port, _ws_conn, _session_id
 
     host = ws_host
     port = ws_port
@@ -29,7 +30,12 @@ def connect(
     _ws_conn.send(json.dumps({
         "pip_modules": pip_modules, "client_id": client_id,
     }))
+
     response = _ws_conn.recv()
+    response = json.loads(response)
+
+    _session_id = response["body"]["session_id"]
+    print(f"Connected to server. Session ID: {_session_id}")
 
 
 def get_clean_source(func):
