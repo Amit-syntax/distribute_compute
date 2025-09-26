@@ -7,30 +7,15 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Amit-syntax/distribute_compute/internal/common"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
-type Message struct {
-	Action         string `json:"action"` // should be "register"
-	ClientUsername string `json:"client_username"`
-
-	// choices{system_info_update, code_run}
-	MessageType string `json:"message_type"`
-
-	Content map[string]any `json:"content"`
-}
-
-type RegisterMessage struct {
-	Action         string `json:"action"` // should be "register"
-	ClientUsername string `json:"client_username"`
-	JoineeType     string `json:"joinee_type"` // choices{worker,consumer}
-}
-
 type Client struct {
-	Id         string `json:"id"`
-	Username   string `json:"username"`
-	JoineeType string `json:"joinee_type"`
+	Id         string            `json:"id"`
+	Username   string            `json:"username"`
+	JoineeType common.JoineeType `json:"joinee_type"`
 	conn       *websocket.Conn
 	hub        *ClientHub
 }
@@ -95,8 +80,8 @@ func (client *Client) readBulk() {
 			}
 			break
 		}
-
-		msg := &Message{}
+		
+		msg := &common.Message{}
 		if err = json.Unmarshal(msgByte, msg); err != nil {
 			log.Printf("error unmarshaling: %v", err)
 			continue
@@ -126,7 +111,7 @@ func HandleClientConnHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	msg := &RegisterMessage{}
+	msg := &common.RegisterMessage{}
 	if err = json.Unmarshal(msgByte, msg); err != nil {
 		log.Printf("error unmarshaling: %v", err)
 	}
