@@ -40,12 +40,12 @@ func Connect(serverIP string, port string) {
 	wg.Add(1)
 
 	// holding cli to read user commands
-	go readUserCommands(wg)
+	go readUserCommands(wg, conn)
 
 	wg.Wait()
 }
 
-func readUserCommands(wg *sync.WaitGroup) {
+func readUserCommands(wg *sync.WaitGroup, conn *websocket.Conn) {
 	for {
 		reader := bufio.NewReader(os.Stdin)
 		fmt.Print("cmd: ")
@@ -55,6 +55,10 @@ func readUserCommands(wg *sync.WaitGroup) {
 		if command == "exit\n" {
 			wg.Done()
 			return
+		}
+		err := conn.WriteMessage(websocket.BinaryMessage, []byte(command))
+		if err != nil {
+			log.Printf("Error sending command: %v", err)
 		}
 	}
 }
