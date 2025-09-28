@@ -55,9 +55,9 @@ func SessionHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Wait for client registration message
 	conn.SetReadLimit(512)
-	conn.SetReadDeadline(time.Now().Add(30 * time.Second))
 
 	_, msgByte, err := conn.ReadMessage()
+	log.Print("SessionHandler received message: ", string(msgByte))
 	if err != nil {
 		if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 			log.Printf("error: %v", err)
@@ -90,13 +90,16 @@ func SessionHandler(w http.ResponseWriter, r *http.Request) {
 	sessionMsg := common.Message{
 		Type:        common.SessionAckMsgType,
 		Description: "Session created",
-		Body:        common.SessionAckMessage{SessionId: session.SessionId},
+		Body:        common.SessionAckMsg{SessionId: session.SessionId},
 	}
+	log.Print("Session created with ID: ", session.SessionId)
 	// send session ID to client in ack msg
 	if err := conn.WriteJSON(sessionMsg); err != nil {
 		log.Printf("error sending ack: %v", err)
 		return
 	}
+
+	go session.readSession()
 }
 
 func (s *ConsumerSessionConn) readSession() {
@@ -121,13 +124,41 @@ func (s *ConsumerSessionConn) readSession() {
 			continue
 		}
 
-		if msg.Type == common.SessionExecReqMsgType {
-			// Forward the execution request to the associated client
-			log.Printf("session message: %v", msg)
+		if msg.Type != common.SessionRemoteExecReq {
+			log.Printf("unknown message type: %v", msg.Type)
+			continue
 		}
+		log.Printf("Received remote exec request: %v", msg)
+
+		executionUUID := sendRemoteExecRequestToWorker(s, msg)
+
+		respMsg := &common.Message{
+			Type:        common.SessionRemoteExecInit,
+			Description: "Remote execution request initialized",
+			Body: common.SessionRemoteExecInitMsg{
+				ExecutionID: executionUUID,
+			},
+		}
+		if err := s.SessionConn.WriteJSON(respMsg); err != nil {
+			log.Printf("error sending remote exec init response: %v", err)
+			continue
+		}
+		log.Printf("Sent remote exec init response with execution ID: %s", executionUUID)
+
 	}
 }
 
 //  TODOs
 // search the client which match the requirement and assign the job to that client.
 // send the job execute command to that client.
+
+func sendRemoteExecRequestToWorker(session *ConsumerSessionConn, msg *common.Message) string {
+	log.Printf("Sending remote exec request to client: %v", session.Client)
+
+	executionUUID := uuid.New().String()
+
+	// TODO: Find a worker client
+	// TODO: sending the request to the client.
+
+	return executionUUID
+}
