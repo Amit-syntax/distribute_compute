@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"sync"
-	"time"
 
 	"github.com/Amit-syntax/distribute_compute/internal/common"
 	"github.com/google/uuid"
@@ -35,17 +34,18 @@ func (h *ClientHub) Register(client *Client) {
 func (h *ClientHub) Unregister(client *Client) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
+	log.Print("Unregistering client: ", client.Username)
 	client.hub = h
 	h.clients[client] = false
 }
 
-func (h *ClientHub) GetClientById(uuid string) *Client {
+func (h *ClientHub) GetClientById(name string) *Client {
 
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 
 	for client := range h.clients {
-		if client.Id == uuid && h.clients[client] {
+		if client.Username == name && h.clients[client] {
 			return client
 		}
 	}
@@ -74,13 +74,14 @@ func (client *Client) readBulk() {
 
 	for {
 		_, msgByte, err := client.conn.ReadMessage()
+		log.Print("Received message: ", string(msgByte))
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				log.Printf("error: %v", err)
 			}
 			break
 		}
-		
+
 		msg := &common.Message{}
 		if err = json.Unmarshal(msgByte, msg); err != nil {
 			log.Printf("error unmarshaling: %v", err)
@@ -102,7 +103,6 @@ func HandleClientConnHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Wait for client registration message
 	conn.SetReadLimit(512)
-	conn.SetReadDeadline(time.Now().Add(30 * time.Second))
 
 	_, msgByte, err := conn.ReadMessage()
 	if err != nil {
@@ -111,7 +111,7 @@ func HandleClientConnHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	msg := &common.RegisterMessage{}
+	msg := &common.RegisterMsg{}
 	if err = json.Unmarshal(msgByte, msg); err != nil {
 		log.Printf("error unmarshaling: %v", err)
 	}
